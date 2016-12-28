@@ -1,0 +1,125 @@
+#!/usr/bin/env perl
+use Mojolicious::Lite;
+
+plugin 'Config';
+
+get '/' => sub {
+  my $c = shift;
+  $c->render(template => 'index');
+};
+get '/new' => sub {
+  my $c = shift;
+};
+post '/new' => sub {
+  my $c = shift;
+  my $client_name = $c->param('client_name');
+  my $aws_account = $c->param('aws_account');
+  # insert into kms (client_name, aws_account) values ($client_name, $aws_account)
+  $c->render('new_saved');
+};
+get '/fake_aws_console' => sub {
+  my $c = shift;
+  my $account = $c->param('account');
+  # my $client_name = select client_name from kms where aws_account = '$account'
+  my $client_name = $c->param('roleName'); $client_name =~ s/-.*?$//;
+  $c->stash(client_name => $client_name);
+};
+
+get '/console' => sub {
+  my $c = shift;
+  my $client_name = $c->param('client_name');
+  $c->redirect_to("/console/$client_name");
+};
+get '/console/:client' => sub {
+  my $c = shift;
+  my $client = $c->param('client');
+  # my %client = select aws_account, client_name from kms where client_name='$client' or aws_account='$client'
+  my %client = (aws_account => '123451234512', client_name => 'SomeClient');
+  $c->redirect_to("/fake_aws_console?account=$client{aws_account}&roleName=$client{client_name}_KeystoneManagedServices&displayName=KMS+\@+$client{client_name}");
+};
+get '/lookup/:client' => sub {
+  my $c = shift;
+  my $client = $c->param('client');
+  # my @options = select client_name from kms where client_name like "%$client%" or aws_account like "%$client%"
+  my @options = qw(HSHS BJC Anova OA OISI);
+  $c->render(json => {clients => [@options]});
+};
+
+app->start;
+__DATA__
+
+@@ fake_aws_console.html.ep
+<p>This a a fake representation of the client's AWS console that you would be seeing if this wasn't a prototype.</p>
+<p>You probably requested a different client than the details below, but this is just a prototype.</p>
+You have connected to <%= $client_name %><br>
+<li>Account: <%= param 'account' %></li>
+<li>roleName: <%= param 'roleName' %></li>
+<li>displayName: <%= param 'displayName' %></li>
+
+@@ new.html.ep
+%= form_for new => (method => 'POST') => begin
+  %= label_for client_name => 'Client Name'
+  %= text_field 'client_name'
+  %= label_for aws_account => 'Client AWS Account #'
+  %= text_field 'aws_account'
+  %= submit_button
+% end
+<p>Alternatively, we could prompt fo the client's AWS API credentials (key and secret)<p>
+
+@@ new_saved.html.ep
+Almost done with onboarding!  Log into to your client's AWS console (perhaps as the client's root account?) and create these roles and policies:
+<p>Create a policy for Keystone</p>
+<li>KeystoneFullAccess</li>
+<p>Create a role</p>
+<li><%= param 'client_name' %>-KeystoneManagedServices</li>
+<p>Assign the policy to the role with these options:</p>
+<li>Role for cross-account access</li>
+<li>Provide access between AWS accounts you own</li>
+<li>Enter Keystone Account ID <%= config 'MSP_AWS_ID' %></li>
+<p>Or, if using AWS API creds do all that stuff automatically</p>
+<hr>
+<p>Click this button to continue: [pretend this is a button and you just clicked it]</p>
+<hr>
+You just on-boarded <%= param 'client_name' %>!  (You didn't really, this is just a prototype.)<br>
+What that means is:
+<li>You can now visit <%= link_to 'the KMS AWS Orchestration Tool' => '/' %> to connect to this client's AWS console.</li>
+<li>You can now jump straight to this client's AWS console by <%= url_for('consoleclient', client => param 'client_name')->to_abs %></li>
+<li>This KMS AWS Orchestration Tool just connected to the KMS AWS API and modified to append the following JSON statement to the role's policy named "AssumeRoleFullAccess" for group "Administrators":</li>
+<pre>
+        {
+            "Effect": "Allow",
+            "Action": "*",
+            "Resource": "arn:aws:iam::<%= param 'aws_account' %>:role/<%= param 'client_name' %>-KeystoneManagedServices"
+        }
+</pre>
+<li>Any KMS AWS user that is in the Administrators group can manage the AWS console of this client (or any client because we decided that the Administrators group should be able to connect to any KMS client).
+
+@@ index.html.ep
+% layout 'default';
+% title 'Welcome';
+<h1>Welcome to Keystone's first in-house AWS orchestration tool!</h1>
+<p><%= link_to 'Click here to connect to the KMS AWS console' => 'http://aws.kit.cm' %></p>
+<p>(Provide some hint documentation here that instructs / reminds the Keystone employee what is in this console, how they login to it, and why they use it.)</p>
+
+<p>This is for managing Keystone Managed Services clients' AWS consoles:</p>
+<p>[ <%= link_to '+' => 'new' %> ] On-board a new KMS client's AWS console to be managed by KMS.<p>
+<p>Manage a recently managed KMS client by selecting from the history list:</p>
+<li><%= link_to HSHS => url_for 'consoleclient', client => 'HSHS' %></li>
+<li><%= link_to BJC => url_for 'consoleclient', client => 'BJC' %></li>
+<li><%= link_to Anova => url_for 'consoleclient', client => 'Anova' %></li>
+<li><%= link_to OA => url_for 'consoleclient', client => 'OA' %></li>
+<li><%= link_to OISI => url_for 'consoleclient', client => 'OISI' %></li>
+<p>Or specify on this auto-complete form which client you wish to connect to:<p>
+<p>(auto-complete not currently enabled)</p>
+%= form_for console => begin
+  %= label_for client_name => 'Client Name or AWS Account #'
+  %= text_field 'client_name'
+  %= submit_button
+% end
+
+@@ layouts/default.html.ep
+<!DOCTYPE html>
+<html>
+  <head><title><%= title %></title></head>
+  <body><%= content %></body>
+</html>
