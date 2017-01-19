@@ -93,6 +93,11 @@ What that means is:
         }
 </pre>
 <li>Any KMS AWS user that is in the Administrators group can manage the AWS console of this client (or any client because we decided that the Administrators group should be able to connect to any KMS client).
+<li>Enabled IAM controls for billing</li>
+<li>Created a client Billing group with full access to Billing policy</li>
+<li>Added client Billing group to client <%= param 'client_name' %>-KeystoneManagedServices role to allow Keystone users access to client billing</li>
+<li>Turned on Billing Cost Explorer, Budgets, and Cost Allocation Tags</li>
+<li>Created an initial low $ budget with a budget notication delivered to ???</li>
 
 @@ index.html.ep
 % layout 'default';
