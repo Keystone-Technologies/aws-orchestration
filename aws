@@ -49,8 +49,8 @@ app->start;
 __DATA__
 
 @@ fake_aws_console.html.ep
-<p>This a a fake representation of the client's AWS console that you would be seeing if this wasn't a prototype.</p>
-<p>You probably requested a different client than the details below, but this is just a prototype.</p>
+<p>This a a fake representation of the client's AWS console that you would be seeing if this wasn't a wireframe.</p>
+<p>You probably requested a different client than the details below, but this is just a wireframe.</p>
 You have connected to <%= $client_name %><br>
 <li>Account: <%= param 'account' %></li>
 <li>roleName: <%= param 'roleName' %></li>
@@ -64,7 +64,7 @@ You have connected to <%= $client_name %><br>
   %= text_field 'aws_account'
   %= submit_button
 % end
-<p>Alternatively, we could prompt fo the client's AWS API credentials (key and secret)<p>
+<p>Alternatively, we could prompt for the client's AWS API credentials (key and secret)<p>
 
 @@ new_saved.html.ep
 Almost done with onboarding!  Log into to your client's AWS console (perhaps as the client's root account?) and create these roles and policies:
@@ -80,7 +80,7 @@ Almost done with onboarding!  Log into to your client's AWS console (perhaps as 
 <hr>
 <p>Click this button to continue: [pretend this is a button and you just clicked it]</p>
 <hr>
-You just on-boarded <%= param 'client_name' %>!  (You didn't really, this is just a prototype.)<br>
+You just on-boarded <%= param 'client_name' %>!  (You didn't really, this is just a wireframe.)<br>
 What that means is:
 <li>You can now visit <%= link_to 'the KMS AWS Orchestration Tool' => '/' %> to connect to this client's AWS console.</li>
 <li>You can now jump straight to this client's AWS console by <%= url_for('consoleclient', client => param 'client_name')->to_abs %></li>
@@ -97,7 +97,7 @@ What that means is:
 @@ index.html.ep
 % layout 'default';
 % title 'Welcome';
-<h1>Welcome to Keystone's first in-house AWS orchestration tool!</h1>
+<h1>Welcome to Keystone's first in-house AWS orchestration tool (Wireframe Edition)!</h1>
 <p><%= link_to 'Click here to connect to the KMS AWS console' => 'http://aws.kit.cm' %></p>
 <p>(Provide some hint documentation here that instructs / reminds the Keystone employee what is in this console, how they login to it, and why they use it.)</p>
 
