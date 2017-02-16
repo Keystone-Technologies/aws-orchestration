@@ -58,8 +58,8 @@ app->start;
 __DATA__
 
 @@ fake_aws_console.html.ep
-<p>This a a fake representation of the client's AWS console that you would be seeing if this wasn't a prototype.</p>
-<p>You probably requested a different client than the details below, but this is just a prototype.</p>
+<p>This a a fake representation of the client's AWS console that you would be seeing if this wasn't a wireframe.</p>
+<p>You probably requested a different client than the details below, but this is just a wireframe.</p>
 You have connected to <%= $client_name %><br>
 <li>Account: <%= param 'account' %></li>
 <li>roleName: <%= param 'roleName' %></li>
@@ -73,23 +73,36 @@ You have connected to <%= $client_name %><br>
   %= text_field 'aws_account'
   %= submit_button
 % end
-<p>Alternatively, we could prompt fo the client's AWS API credentials (key and secret)<p>
+<p>Alternatively, we could prompt for the client's AWS API credentials (key and secret)<p>
 
 @@ new_saved.html.ep
 Almost done with onboarding!  Log into to your client's AWS console (perhaps as the client's root account?) and create these roles and policies:
 <p>Create a policy for <%= config 'company' %></p>
 <li><%= config 'company_role' %></li>
+<code>
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "*",
+            "Resource": "*"
+        }
+    ]
+}
+</code>
 <p>Create a role</p>
 <li><%= param 'client_name' %><%= config 'role_suffix' %></li>
 <p>Assign the policy to the role with these options:</p>
 <li>Role for cross-account access</li>
 <li>Provide access between AWS accounts you own</li>
 <li>Enter <%= config 'company' %> Account ID <%= config 'MSP_AWS_ID' %></li>
+<li>Attach the Policy you just created: KeystoneFullAccess</li>
 <p>Or, if using AWS API creds do all that stuff automatically</p>
 <hr>
 <p>Click this button to continue: [pretend this is a button and you just clicked it]</p>
 <hr>
-You just on-boarded <%= param 'client_name' %>!  (You didn't really, this is just a prototype.)<br>
+You just on-boarded <%= param 'client_name' %>!  (You didn't really, this is just a wireframe.)<br>
 What that means is:
 <li>You can now visit <%= link_to 'the KMS AWS Orchestration Tool' => '/' %> to connect to this client's AWS console.</li>
 <li>You can now jump straight to this client's AWS console by <%= url_for('consoleclient', client => param 'client_name')->to_abs %></li>
@@ -102,6 +115,16 @@ What that means is:
         }
 </pre>
 <li>Any KMS AWS user that is in the Administrators group can manage the AWS console of this client (or any client because we decided that the Administrators group should be able to connect to any KMS client).
+<li>Enabled IAM controls for billing</li>
+Sign in to the AWS Management Console with your root account credentials (the email address and password that you used to create your AWS account). Don't sign in with your IAM user credentials.
+On the navigation bar, choose your account name, and then choose My Account.
+Next to IAM User Access to Billing Information, choose Edit.
+Select the Activate IAM Access check box to activate access to the Billing and Cost Management pages. You can now use IAM policies to control which pages a user can access.
+<li>Turn on Consolidated Billing and let Keystone's <%= config 'MSP_AWS_ID' %> handle the billing.  Do this from Keystone's account and provide the email of this new account to request consolidated billing link</li>
+<li>Created a client Billing group with full access to Billing policy</li>
+<li>Added client Billing group to client <%= param 'client_name' %>-KeystoneManagedServices role to allow Keystone users access to client billing</li>
+<li>Turned on Billing Cost Explorer, Budgets, and Cost Allocation Tags</li>
+<li>Created an initial low $ budget with a budget notication delivered to ???</li>
 
 @@ index.html.ep
 % layout 'default';
