@@ -32,17 +32,26 @@ get '/console' => sub {
 };
 get '/console/:client' => sub {
   my $c = shift;
+  my $role_suffix = $c->app->config->{role_suffix};
   my $client = $c->param('client');
+  $c->redirect_to("/fake_aws_console?account=12345&roleName=${client}$role_suffix&displayName=KMS+\@+$client") unless $c->app->config->{links}->{$client};
+
   # my %client = select aws_account, client_name from kms where client_name='$client' or aws_account='$client'
-  my %client = (aws_account => '123451234512', client_name => 'SomeClient');
-  $c->redirect_to("/fake_aws_console?account=$client{aws_account}&roleName=$client{client_name}_KeystoneManagedServices&displayName=KMS+\@+$client{client_name}");
+  my $console_url = $c->app->config->{console_url};
+  my %client = %{$c->app->config->{links}->{$client}};
+  $console_url =~ s/%aws_account%/$client{aws_account}/g;
+  $console_url =~ s/%client_name%/$client/g;
+  $console_url =~ s/%role_suffix%/$role_suffix/g;
+  $console_url =~ s/%display_name%/KMS+\@+$client{display_name}/g;
+  $c->redirect_to($console_url);
 };
 get '/lookup/:client' => sub {
   my $c = shift;
   my $client = $c->param('client');
   # my @options = select client_name from kms where client_name like "%$client%" or aws_account like "%$client%"
-  my @options = qw(HSHS BJC Anova OA OISI);
-  $c->render(json => {clients => [@options]});
+  my $options = $c->app->config->{links};
+  $options = {map { $_ => $options->{$_} } grep { $_->{display_name} =~ $client || $_->{aws_account} =~ $client } keys %$options} if $client;
+  $c->render(json => {clients => [keys %$options]});
 };
 
 app->start;
@@ -68,14 +77,14 @@ You have connected to <%= $client_name %><br>
 
 @@ new_saved.html.ep
 Almost done with onboarding!  Log into to your client's AWS console (perhaps as the client's root account?) and create these roles and policies:
-<p>Create a policy for Keystone</p>
-<li>KeystoneFullAccess</li>
+<p>Create a policy for <%= config 'company' %></p>
+<li><%= config 'company_role' %></li>
 <p>Create a role</p>
-<li><%= param 'client_name' %>-KeystoneManagedServices</li>
+<li><%= param 'client_name' %><%= config 'role_suffix' %></li>
 <p>Assign the policy to the role with these options:</p>
 <li>Role for cross-account access</li>
 <li>Provide access between AWS accounts you own</li>
-<li>Enter Keystone Account ID <%= config 'MSP_AWS_ID' %></li>
+<li>Enter <%= config 'company' %> Account ID <%= config 'MSP_AWS_ID' %></li>
 <p>Or, if using AWS API creds do all that stuff automatically</p>
 <hr>
 <p>Click this button to continue: [pretend this is a button and you just clicked it]</p>
@@ -89,26 +98,25 @@ What that means is:
         {
             "Effect": "Allow",
             "Action": "*",
-            "Resource": "arn:aws:iam::<%= param 'aws_account' %>:role/<%= param 'client_name' %>-KeystoneManagedServices"
+            "Resource": "arn:aws:iam::<%= param 'aws_account' %>:role/<%= param 'client_name' %><%= config 'role_suffix' %>"
         }
 </pre>
 <li>Any KMS AWS user that is in the Administrators group can manage the AWS console of this client (or any client because we decided that the Administrators group should be able to connect to any KMS client).
 
 @@ index.html.ep
 % layout 'default';
-% title 'Welcome';
-<h1>Welcome to Keystone's first in-house AWS orchestration tool!</h1>
+% title config 'name';
+<h1>Welcome to <%= config 'company' %>'s first in-house AWS orchestration tool!</h1>
 <p><%= link_to 'Click here to connect to the KMS AWS console' => 'http://aws.kit.cm' %></p>
-<p>(Provide some hint documentation here that instructs / reminds the Keystone employee what is in this console, how they login to it, and why they use it.)</p>
+<p>(Provide some hint documentation here that instructs / reminds the <%= config 'company' %> employee what is in this console, how they login to it, and why they use it.)</p>
 
-<p>This is for managing Keystone Managed Services clients' AWS consoles:</p>
+<p>This is for managing <%= config 'name' %> clients' AWS consoles:</p>
 <p>[ <%= link_to '+' => 'new' %> ] On-board a new KMS client's AWS console to be managed by KMS.<p>
 <p>Manage a recently managed KMS client by selecting from the history list:</p>
-<li><%= link_to HSHS => url_for 'consoleclient', client => 'HSHS' %></li>
-<li><%= link_to BJC => url_for 'consoleclient', client => 'BJC' %></li>
-<li><%= link_to Anova => url_for 'consoleclient', client => 'Anova' %></li>
-<li><%= link_to OA => url_for 'consoleclient', client => 'OA' %></li>
-<li><%= link_to OISI => url_for 'consoleclient', client => 'OISI' %></li>
+% my $options = config 'links';
+% foreach ( keys %$options ) {
+<li><%= link_to $_ => url_for 'consoleclient', client => $_ %></li>
+% }
 <p>Or specify on this auto-complete form which client you wish to connect to:<p>
 <p>(auto-complete not currently enabled)</p>
 %= form_for console => begin
